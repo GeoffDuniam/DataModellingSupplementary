@@ -2,7 +2,7 @@
 
 This repository contains the ancilliary material for the paper "<title>" submitted to Astronomy and computing. It is divied into four sections.
   
-  ### Environment confirugation scripts
+  ### Environment configuration scripts
   This section contains 
   * the scripts to create the virtual environments on the dostributed cluster environment
   * The spark2-submit basic confiurations to submit the jobs
@@ -14,11 +14,12 @@ This repository contains the ancilliary material for the paper "<title>" submitt
   * Examples of the SQL ode used to create training set tables pivoted into feature vector arrays
   * Examples of the SQL used to create the calculated fields and time intervals.
   * Examples of the techniques used to pad the feature vectors to a predetermined limit
-  * Examples of the code used to augment a training set and instantiate these changes into a table.
   
   ### Table augmentation notebooks
+  * Examples of the code used to augment a training set and instantiate these changes into a table.
   
   ### Source code for the python analysis programs
+  * All test program listings
   
   ### Miscellaenous 
   
