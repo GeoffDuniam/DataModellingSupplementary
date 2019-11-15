@@ -11,7 +11,7 @@ This repository contains the ancilliary material for the paper "<title>" submitt
   
   ### Table creation notebooks
   This section contains
-  * Examples of the SQL ode used to create training set tables pivoted into feature vector arrays
+  * Examples of the SQL code used to create training set tables pivoted into feature vector arrays
   * Examples of the SQL used to create the calculated fields and time intervals.
   * Examples of the techniques used to pad the feature vectors to a predetermined limit
   
