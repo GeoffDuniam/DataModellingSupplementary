@@ -1,1 +1,3 @@
-# This directory containes the course code for the experimental pyhion programs
+# Source code listings
+
+Python source code for the data model test programs
