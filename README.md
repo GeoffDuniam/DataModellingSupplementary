@@ -1,6 +1,6 @@
 # Data Modelling Paper - Supplementary material
 
-This repository contains the ancilliary material for the paper "<title>" submitted to Astronomy and computing. It is divied into four sections.
+This repository contains the ancilliary material for the paper "<title>" submitted to Astronomy and Computing. It is divided into four sections.
   
   ### Environment configuration scripts
   This section contains 
