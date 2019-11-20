@@ -1,3 +1,5 @@
+# For the query
+
 == Physical Plan ==
 InMemoryTableScan [object_id#25, meta#107, target#106, specz#108, band#121, hist#122]
    +- InMemoryRelation [object_id#25, meta#107, target#106, specz#108, band#121, hist#122], true, 10000, StorageLevel(disk, memory, deserialized, 1 replicas)
