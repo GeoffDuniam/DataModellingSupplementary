@@ -77,6 +77,9 @@ case "$SPARK_KAFKA_VERSION" in
 esac
 
 export SPARK_DIST_CLASSPATH="$SPARK_DIST_CLASSPATH:$(paste -sd: "$SELF/classpath.txt")"
+
+# Code fragments below illustrate the use of environment variables to set the python paths and driver paths on worker nodes
+
  if [ "${RGZ_ENV}" == "True" ]; then 
   export PYSPARK_DRIVER_PYTHON=/home/hduser/.virtualenvs/ClaRAN/bin/python
   export PYSPARK_PYTHON=/home/hduser/.virtualenvs/ClaRAN/bin/python
