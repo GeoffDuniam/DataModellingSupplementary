@@ -1,0 +1,73 @@
+== Physical Plan ==
+InMemoryTableScan [object_id#25, meta#107, target#106, specz#108, band#121, hist#122]
+   +- InMemoryRelation [object_id#25, meta#107, target#106, specz#108, band#121, hist#122], true, 10000, StorageLevel(disk, memory, deserialized, 1 replicas)
+         +- ObjectHashAggregate(keys=[object_id#25, meta#107, target#106, specz#108], functions=[collect_list(kv#109[passband], 0, 0), collect_list(kv#109[interval], 0, 0), collect_list(kv#109[deltaMjd], 0, 0), collect_list(kv#109[rval], 0, 0), collect_list(kv#109[flux], 0, 0), collect_list(kv#109[flux_err], 0, 0), collect_list(kv#109[detected], 0, 0), collect_list(kv#109[source_wavelength], 0, 0), collect_list(kv#109[received_wavelength], 0, 0)])
+            +- Exchange hashpartitioning(object_id#25, meta#107, target#106, specz#108, 200)
+               +- ObjectHashAggregate(keys=[object_id#25, meta#107, target#106, specz#108], functions=[partial_collect_list(kv#109[passband], 0, 0), partial_collect_list(kv#109[interval], 0, 0), partial_collect_list(kv#109[deltaMjd], 0, 0), partial_collect_list(kv#109[rval], 0, 0), partial_collect_list(kv#109[flux], 0, 0), partial_collect_list(kv#109[flux_err], 0, 0), partial_collect_list(kv#109[detected], 0, 0), partial_collect_list(kv#109[source_wavelength], 0, 0), partial_collect_list(kv#109[received_wavelength], 0, 0)])
+                  +- *(28) Project [object_id#25, mapped_target#94 AS target#106, array(0.0, 0.0, 0.0, 0.0, cast(ddf#49 as double), hostgal_specz#50, hostgal_photoz#51, mwebv#54, cast(photoz_positive#93 as double), 0.0) AS meta#107, hostgal_specz#50 AS specz#108, map(interval, mjdInt#68, deltaMjd, deltaMjd#69, passband, cast(passband#8 as double), rval, rval#85, flux, flux#9, flux_err, flux_err#10, detected, cast(detected#11 as double), received_wavelength, cast(CASE WHEN (passband#8 = 0) THEN 357 WHEN (passband#8 = 1) THEN 477 WHEN (passband#8 = 2) THEN 621 WHEN (passband#8 = 3) THEN 754 WHEN (passband#8 = 4) THEN 871 ELSE 1004 END as double), source_wavelength, CASE WHEN (passband#8 = 0) THEN (357.0 / (hostgal_photoz#51 + 1.0)) WHEN (passband#8 = 1) THEN (477.0 / (hostgal_photoz#51 + 1.0)) WHEN (passband#8 = 2) THEN (621.0 / (hostgal_photoz#51 + 1.0)) WHEN (passband#8 = 3) THEN (754.0 / (hostgal_photoz#51 + 1.0)) WHEN (passband#8 = 4) THEN (871.0 / (hostgal_photoz#51 + 1.0)) ELSE (1004.0 / (hostgal_photoz#51 + 1.0)) END) AS kv#109]
+                     +- *(28) BroadcastHashJoin [object_id#25], [object_id#44], Inner, BuildRight
+                        :- *(28) Project [object_id#25, mjdInt#68, deltaMjd#69, passband#8, flux#9, flux_err#10, detected#11, rval#85]
+                        :  +- *(28) SortMergeJoin [object_id#25, rownum#70], [object_id#110, rownum#86], Inner
+                        :     :- *(13) Sort [object_id#25 ASC NULLS FIRST, rownum#70 ASC NULLS FIRST], false, 0
+                        :     :  +- Exchange hashpartitioning(object_id#25, rownum#70, 200)
+                        :     :     +- *(12) Project [object_id#25, (mjd#7 - _we0#73) AS mjdInt#68, CASE WHEN isnull(_we1#74) THEN 0.0 ELSE (mjd#7 - _we2#75) END AS deltaMjd#69, passband#8, flux#9, flux_err#10, detected#11, rownum#70]
+                        :     :        +- *(12) Filter isnotnull(rownum#70)
+                        :     :           +- Window [first(mjd#7, false) windowspecdefinition(object_id#25, mjd#7 ASC NULLS FIRST, specifiedwindowframe(RangeFrame, unboundedpreceding$(), currentrow$())) AS _we0#73, lag(mjd#7, 1, null) windowspecdefinition(object_id#25, mjd#7 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -1, -1)) AS _we1#74, lag(mjd#7, 1, null) windowspecdefinition(object_id#25, mjd#7 ASC NULLS FIRST, specifiedwindowframe(RowFrame, -1, -1)) AS _we2#75, row_number() windowspecdefinition(object_id#25, mjd#7 ASC NULLS FIRST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rownum#70], [object_id#25], [mjd#7 ASC NULLS FIRST]
+                        :     :              +- *(11) Sort [object_id#25 ASC NULLS FIRST, mjd#7 ASC NULLS FIRST], false, 0
+                        :     :                 +- Exchange hashpartitioning(object_id#25, 200)
+                        :     :                    +- *(10) Sort [object_id#25 ASC NULLS FIRST, mjd#7 ASC NULLS FIRST], true, 0
+                        :     :                       +- Exchange rangepartitioning(object_id#25 ASC NULLS FIRST, mjd#7 ASC NULLS FIRST, 200)
+                        :     :                          +- *(9) Sort [object_id#25 ASC NULLS FIRST, mjd#7 DESC NULLS LAST], true, 0
+                        :     :                             +- Exchange rangepartitioning(object_id#25 ASC NULLS FIRST, mjd#7 DESC NULLS LAST, 200)
+                        :     :                                +- *(8) Project [object_id#25, CASE WHEN isnull(mjd#33) THEN cast(padMJD#1 as double) ELSE mjd#33 END AS mjd#7, CASE WHEN isnull(passband#34) THEN padPassband#2 ELSE cast(passband#34 as int) END AS passband#8, CASE WHEN isnull(flux#35) THEN cast(padFlux#3 as double) ELSE mjd#33 END AS flux#9, CASE WHEN isnull(flux_err#36) THEN cast(padFlux_err#4 as double) ELSE flux_err#36 END AS flux_err#10, CASE WHEN isnull(detected#37) THEN padDetected#5 ELSE cast(detected#37 as int) END AS detected#11]
+                        :     :                                   +- SortMergeJoin [object_id#25, rownum#0], [object_id#32, rownum#6], LeftOuter
+                        :     :                                      :- *(5) Sort [object_id#25 ASC NULLS FIRST, rownum#0 ASC NULLS FIRST], false, 0
+                        :     :                                      :  +- Exchange hashpartitioning(object_id#25, rownum#0, 200)
+                        :     :                                      :     +- BroadcastNestedLoopJoin BuildRight, Cross
+                        :     :                                      :        :- *(2) HashAggregate(keys=[object_id#25], functions=[])
+                        :     :                                      :        :  +- Exchange hashpartitioning(object_id#25, 200)
+                        :     :                                      :        :     +- *(1) HashAggregate(keys=[object_id#25], functions=[])
+                        :     :                                      :        :        +- *(1) Filter isnotnull(object_id#25)
+                        :     :                                      :        :           +- HiveTableScan [object_id#25], HiveTableRelation `plasticc`.`training_set`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, [object_id#25, mjd#26, passband#27, flux#28, flux_err#29, detected#30]
+                        :     :                                      :        +- BroadcastExchange IdentityBroadcastMode
+                        :     :                                      :           +- *(4) Project [rownum#0]
+                        :     :                                      :              +- *(4) Filter (isnotnull(rownum#0) && (rownum#0 <= 256))
+                        :     :                                      :                 +- Window [row_number() windowspecdefinition(object_id#13 ASC NULLS FIRST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rownum#0], [object_id#13 ASC NULLS FIRST]
+                        :     :                                      :                    +- *(3) Sort [object_id#13 ASC NULLS FIRST], false, 0
+                        :     :                                      :                       +- Exchange SinglePartition
+                        :     :                                      :                          +- HiveTableScan [object_id#13], HiveTableRelation `plasticc`.`training_set_metadata`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, [object_id#13, ra#14, decl#15, gal_l#16, gal_b#17, ddf#18, hostgal_specz#19, hostgal_photoz#20, hostgal_photoz_err#21, distmod#22, mwebv#23, target#24]
+                        :     :                                      +- *(7) Sort [object_id#32 ASC NULLS FIRST, rownum#6 ASC NULLS FIRST], false, 0
+                        :     :                                         +- Exchange hashpartitioning(object_id#32, rownum#6, 200)
+                        :     :                                            +- Window [row_number() windowspecdefinition(object_id#32, mjd#33 DESC NULLS LAST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rownum#6], [object_id#32], [mjd#33 DESC NULLS LAST]
+                        :     :                                               +- *(6) Sort [object_id#32 ASC NULLS FIRST, mjd#33 DESC NULLS LAST], false, 0
+                        :     :                                                  +- Exchange hashpartitioning(object_id#32, 200)
+                        :     :                                                     +- HiveTableScan [object_id#32, mjd#33, passband#34, flux#35, flux_err#36, detected#37], HiveTableRelation `plasticc`.`training_set`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, [object_id#32, mjd#33, passband#34, flux#35, flux_err#36, detected#37]
+                        :     +- *(26) Sort [object_id#110 ASC NULLS FIRST, rownum#86 ASC NULLS FIRST], false, 0
+                        :        +- Exchange hashpartitioning(object_id#110, rownum#86, 200)
+                        :           +- *(25) Project [object_id#110, (_we0#89 - mjd#7) AS rval#85, rownum#86]
+                        :              +- *(25) Filter isnotnull(rownum#86)
+                        :                 +- Window [first(mjd#7, false) windowspecdefinition(object_id#110, mjd#7 DESC NULLS LAST, specifiedwindowframe(RangeFrame, unboundedpreceding$(), currentrow$())) AS _we0#89, row_number() windowspecdefinition(object_id#110, mjd#7 DESC NULLS LAST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rownum#86], [object_id#110], [mjd#7 DESC NULLS LAST]
+                        :                    +- *(24) Sort [object_id#110 ASC NULLS FIRST, mjd#7 DESC NULLS LAST], false, 0
+                        :                       +- Exchange hashpartitioning(object_id#110, 200)
+                        :                          +- *(23) Sort [object_id#110 ASC NULLS FIRST, mjd#7 ASC NULLS FIRST], true, 0
+                        :                             +- Exchange rangepartitioning(object_id#110 ASC NULLS FIRST, mjd#7 ASC NULLS FIRST, 200)
+                        :                                +- *(22) Sort [object_id#110 ASC NULLS FIRST, mjd#7 DESC NULLS LAST], true, 0
+                        :                                   +- Exchange rangepartitioning(object_id#110 ASC NULLS FIRST, mjd#7 DESC NULLS LAST, 200)
+                        :                                      +- *(21) Project [object_id#110, CASE WHEN isnull(mjd#33) THEN cast(padMJD#1 as double) ELSE mjd#33 END AS mjd#7]
+                        :                                         +- SortMergeJoin [object_id#110, rownum#0], [object_id#32, rownum#6], LeftOuter
+                        :                                            :- *(18) Sort [object_id#110 ASC NULLS FIRST, rownum#0 ASC NULLS FIRST], false, 0
+                        :                                            :  +- Exchange hashpartitioning(object_id#110, rownum#0, 200)
+                        :                                            :     +- BroadcastNestedLoopJoin BuildRight, Cross
+                        :                                            :        :- *(15) HashAggregate(keys=[object_id#110], functions=[])
+                        :                                            :        :  +- ReusedExchange [object_id#110], Exchange hashpartitioning(object_id#25, 200)
+                        :                                            :        +- ReusedExchange [rownum#0], BroadcastExchange IdentityBroadcastMode
+                        :                                            +- *(20) Sort [object_id#32 ASC NULLS FIRST, rownum#6 ASC NULLS FIRST], false, 0
+                        :                                               +- Exchange hashpartitioning(object_id#32, rownum#6, 200)
+                        :                                                  +- Window [row_number() windowspecdefinition(object_id#32, mjd#33 DESC NULLS LAST, specifiedwindowframe(RowFrame, unboundedpreceding$(), currentrow$())) AS rownum#6], [object_id#32], [mjd#33 DESC NULLS LAST]
+                        :                                                     +- *(19) Sort [object_id#32 ASC NULLS FIRST, mjd#33 DESC NULLS LAST], false, 0
+                        :                                                        +- Exchange hashpartitioning(object_id#32, 200)
+                        :                                                           +- HiveTableScan [object_id#32, mjd#33], HiveTableRelation `plasticc`.`training_set`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, [object_id#32, mjd#33, passband#34, flux#35, flux_err#36, detected#37]
+                        +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[0, int, true] as bigint)))
+                           +- *(27) Project [object_id#44, ddf#49, hostgal_specz#50, hostgal_photoz#51, mwebv#54, CASE WHEN (hostgal_photoz#51 > 0.0) THEN 1 ELSE 0 END AS photoz_positive#93, CASE WHEN (target#55 = 6) THEN 0 WHEN (target#55 = 15) THEN 1 WHEN (target#55 = 16) THEN 2 WHEN (target#55 = 42) THEN 3 WHEN (target#55 = 52) THEN 4 WHEN (target#55 = 53) THEN 5 WHEN (target#55 = 62) THEN 6 WHEN (target#55 = 64) THEN 7 WHEN (target#55 = 65) THEN 8 WHEN (target#55 = 67) THEN 9 WHEN (target#55 = 88) THEN 10 WHEN (target#55 = 90) THEN 11 WHEN (target#55 = 92) THEN 12 WHEN (target#55 = 95) THEN 13 WHEN (target#55 = 99) THEN 14 ELSE 14 END AS mapped_target#94]
+                              +- *(27) Filter isnotnull(object_id#44)
+                                 +- HiveTableScan [ddf#49, hostgal_photoz#51, hostgal_specz#50, mwebv#54, object_id#44, target#55], HiveTableRelation `plasticc`.`training_set_metadata`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, [object_id#44, ra#45, decl#46, gal_l#47, gal_b#48, ddf#49, hostgal_specz#50, hostgal_photoz#51, hostgal_photoz_err#52, distmod#53, mwebv#54, target#55]
