@@ -1,12 +1,22 @@
+# ====================================================
+# This is the fifthPivotModel running against the SQL created fully padded, fully calculated table
+# ====================================================
+
+
 import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
 import os
+import sys
 import math
 import copy
 import random
 
 import time
+
+from pyspark import SparkConf,SparkContext
+from pyspark.sql import Row, SQLContext, SparkSession
+from pyspark.sql.types import *
 
 from pyspark.ml.feature import StringIndexer, StandardScaler,VectorAssembler,OneHotEncoder
 from pyspark.ml import Pipeline
@@ -56,7 +66,7 @@ import logging
 # Functions for UDFs
 # ====================================================
 
-def pad_array(x, sequence_len=sequence_len):
+def pad_array(x, sequence_len):
     x = np.pad(x, (sequence_len,0), 'constant', constant_values=(0))
     x= x[len(x)-sequence_len:len(x)]
     return x
@@ -69,45 +79,11 @@ def bwd_intervals(x):
     x=np.ediff1d(x, to_end = [0])
     return x
 
-# ====================================================
-# UDF definitions
-# ====================================================
-target_categorical = udf(
-    lambda arr:
-        [int(i+1 == arr) for i in range(num_classes)], 
-        ArrayType(iType)       
-)
 
-get_padded_float_vectors = udf(
-    lambda arr: pad_array(arr).tolist(), 
-    ArrayType(fType)
-)
-
-get_padded_int_vectors = udf(
-    lambda arr: pad_array(arr).tolist(), 
-    ArrayType(iType)
-)
-
-toDenseUdf = udf(
-    lambda arr: Vectors.dense(arr.toArray()), 
-    VectorUDT()
-)
-
-fwd_udf = udf(
-    lambda arr: fwd_intervals(arr).tolist(), 
-    ArrayType(fType)
-)
-
-bwd_udf = udf(
-    lambda arr: bwd_intervals(arr).tolist(), 
-    ArrayType(fType)
-)
-
-to_vector = udf(lambda a: Vectors.dense(a), VectorUDT())
 # ====================================================
 # Get the keras Data dictionary
 # ====================================================
-def get_keras_data(sc,trainingVectorsDF, sequence_len=sequence_len, num_classes=num_classes, recCount=0):
+def get_keras_data(sc,trainingVectorsDF, sequence_len, num_classes, recCount=0):
 
     if recCount == 0:
         r=trainingVectorsDF.count()
@@ -126,12 +102,12 @@ def get_keras_data(sc,trainingVectorsDF, sequence_len=sequence_len, num_classes=
     # this will work brilliantly as get_keras_data sets three columns to zeros anyway
     
     #mjd=np.array(trainingVectorsDF.select('mjd').collect(), dtype='float32').reshape(r,sequence_len)
-    flux=np.array(trainingVectorsDF.select('flux').collect(), dtype='float32').reshape(r,sequence_len)
-    flux_err=np.array(trainingVectorsDF.select('flux_err').collect(), dtype='float32').reshape(r,sequence_len)
+    flux=np.array(trainingVectorsDF.select('hist.flux').collect(), dtype='float32').reshape(r,sequence_len)
+    flux_err=np.array(trainingVectorsDF.select('hist.flux_err').collect(), dtype='float32').reshape(r,sequence_len)
     #detect=np.array(trainingVectorsDF.select('detected').collect(), dtype='float32').reshape(r,sequence_len)
-    fwd_int=np.array(trainingVectorsDF.select('fwd_int').collect(), dtype='float32').reshape(r,sequence_len)
-    bwd_int=np.array(trainingVectorsDF.select('bwd_int').collect(), dtype='float32').reshape(r,sequence_len)
-    source_wavelength=np.array(trainingVectorsDF.select('source_wavelength').collect(), dtype='float32').reshape(r,sequence_len)
+    fwd_int=np.array(trainingVectorsDF.select('hist.deltaMjd').collect(), dtype='float32').reshape(r,sequence_len)
+    bwd_int=np.array(trainingVectorsDF.select('hist.rval').collect(), dtype='float32').reshape(r,sequence_len)
+    source_wavelength=np.array(trainingVectorsDF.select('hist.source_wavelength').collect(), dtype='float32').reshape(r,sequence_len)
     #received_wavelength=np.array(trainingVectorsDF.select('received_wavelength').collect(), dtype='float32').reshape(r,sequence_len)
     
     #as per the baseline program, we remove the abs time, detected and receoved_wavelength data
@@ -153,7 +129,8 @@ def get_keras_data(sc,trainingVectorsDF, sequence_len=sequence_len, num_classes=
             'hist': histArray
         }
     # and the encoded target vector
-    Y = np.array(vectors_df.select('target').collect(), dtype='int32').reshape(r, num_classes)  
+    
+    Y = np.array(trainingVectorsDF.select(target_categorical('target')).collect(), dtype='int32').reshape(r, num_classes)  
     
     return X, Y
 
@@ -253,6 +230,7 @@ def train_model(i, trainingVectorsDF, bTrainModel):
     train_df, validation_df, test_df = trainingVectorsDF.randomSplit(weights, seed)
 
     samples_train=train_df.count()
+    valid_train=validation_df.count()
     patience = 1000000 // samples_train + 5
 
     splitElapsed = time.time() - start
@@ -273,7 +251,7 @@ def train_model(i, trainingVectorsDF, bTrainModel):
     start_validationVectors=time.time()
     start_validationVectorsCpu=time.clock()
 
-    valid_x, valid_y = get_keras_data(sc,validation_df)
+    valid_x, valid_y = get_keras_data(sc,validation_df, sequence_len, num_classes, valid_train)
     
     elapsed_validation_Vectors=time.time() - start_validationVectors
     elapsed_validation_VectorsCpu=time.clock() - start_validationVectorsCpu
@@ -393,7 +371,42 @@ if __name__ == '__main__':
     iType=IntegerType()
     dType=DoubleType()
     fType=FloatType()
-    
+
+    # ====================================================
+    # UDF definitions
+    # ====================================================
+    target_categorical = udf(
+        lambda arr:
+            [int(i+1 == arr) for i in range(num_classes)], 
+            ArrayType(iType)       
+    )
+
+    get_padded_float_vectors = udf(
+        lambda arr: pad_array(arr).tolist(), 
+        ArrayType(fType)
+    )
+
+    get_padded_int_vectors = udf(
+        lambda arr: pad_array(arr).tolist(), 
+        ArrayType(iType)
+    )
+
+    toDenseUdf = udf(
+        lambda arr: Vectors.dense(arr.toArray()), 
+        VectorUDT()
+    )
+
+    fwd_udf = udf(
+        lambda arr: fwd_intervals(arr).tolist(), 
+        ArrayType(fType)
+    )
+
+    bwd_udf = udf(
+        lambda arr: bwd_intervals(arr).tolist(), 
+        ArrayType(fType)
+    )
+
+    to_vector = udf(lambda a: Vectors.dense(a), VectorUDT())
     # ====================================================
     # Set up hive and spark contexts
     # ====================================================
@@ -465,23 +478,9 @@ if __name__ == '__main__':
     startCpu=time.clock()
     
     
-    vectorTable="elephas_training_set"
+    vectorTable="training_set_augmented_vectors"
     trainingVectorsDF=sc.sql("select * from {}".format(vectorTable)).persist()
 
-    trainingVectorsDF = trainingVectorsDF.select(\
-                       "object_id",target_categorical("target").alias("target"),
-                             "meta",                           
-                             get_padded_int_vectors("band").alias("band"),
-                             get_padded_float_vectors("mjd").alias("mjd"),
-                             get_padded_float_vectors("flux").alias("flux"),
-                             get_padded_float_vectors("flux_err").alias("flux_err"),
-                             get_padded_int_vectors("detected").alias("detected"),
-                             fwd_udf(get_padded_float_vectors("fwd_int")).alias("fwd_int"),
-                             bwd_udf(get_padded_float_vectors("bwd_int")).alias("bwd_int"),
-                             get_padded_float_vectors("source_wavelength").alias("source_wavelength"),
-                             get_padded_float_vectors("received_wavelength").alias("received_wavelength")
-                            )
-    
     elapsed_train_df  = time.time() - start
     elapsed_train_dfC = time.clock() - startCpu
     elapsed_samples  = time.time() - start
@@ -577,6 +576,6 @@ if __name__ == '__main__':
         TABLE='PlasticEndToEndTesting'
 
         writeResults(sc, resultsDF, MODE, FORMAT, TABLE)
-        
+        logger.info("writing results to {}".format(str(TABLE)) )
     sc.stop()
     logger.info('All finished')
