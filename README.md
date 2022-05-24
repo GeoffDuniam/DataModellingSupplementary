@@ -1,12 +1,14 @@
 # Data Modelling Paper - Supplementary material
 
-This repository contains the ancilliary material for the paper "<title>" submitted to Astronomy and Computing. It is divided into four sections.
+This repository contains the ancilliary material for the data modelling analysis based around the PlAsTiCC competition and the associated poster presentation to the URSI 202 Conference, subsequently usd as the first use case in the thesis "The performance impact of data modelling for large scale
+astronomical data analysis on distributed and parallel
+platforms". It is divided into four sections.
   
   ### Environment configuration scripts
   This section contains 
   * the scripts to create the virtual environments on the dostributed cluster environment
   * The spark2-submit basic confiurations to submit the jobs
-  * The safety-valve.xml configuration file demonstrating how to run vierutl envs across a cluister
+  * The safety-valve.xml configuration file demonstrating how to run vierutl envs across a cluster
   * The Jupyer kernel file to access Spark and the correct virtual environment
   
   ### Table creation notebooks
