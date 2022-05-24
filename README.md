@@ -1,6 +1,6 @@
-# Data Modelling Paper - Supplementary material
+# Pivot data modelling for Neural Network analysis of Light Curve Data - Supplementary material
 
-This repository contains the ancilliary material for the data modelling analysis based around the PlAsTiCC competition and the associated poster presentation to the URSI 202 Conference, subsequently usd as the first use case in the thesis "The performance impact of data modelling for large scale
+This repository contains the ancilliary material for the data modelling analysis based around the PlAsTiCC competition and the associated poster presentation to the URSI 2021 Conference, subsequently usd as the first use case in the thesis "The performance impact of data modelling for large scale
 astronomical data analysis on distributed and parallel
 platforms". It is divided into four sections.
   
