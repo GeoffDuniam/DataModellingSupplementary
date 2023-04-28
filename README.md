@@ -8,7 +8,7 @@ platforms". It is divided into four sections.
   This section contains 
   * the scripts to create the virtual environments on the dostributed cluster environment
   * The spark2-submit basic confiurations to submit the jobs
-  * The safety-valve.xml configuration file demonstrating how to run vierutl envs across a cluster
+  * The safety-valve.xml configuration file demonstrating how to run virtual envs across a cluster
   * The Jupyer kernel file to access Spark and the correct virtual environment
   
   ### Table creation notebooks
